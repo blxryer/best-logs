@@ -102,7 +102,7 @@ app.get('/health', async (req, res) => {
 	sendStats(req, 'health');
 
 	const rawInstances = Object.fromEntries(utils.instanceChannels);
-	const channels = Array.from(utils.uniqueChannels);
+	const channels = Array.from(utils.uniqueChannels.values());
 
 	const instances = {};
 	for (const [key, arr] of Object.entries(rawInstances)) {
@@ -134,10 +134,10 @@ app.get('/rdr/:channel', async (req, res) => {
 		return res.render('error', { error: `Invalid channel or channel ID: ${channel}`, code: 400 });
 	}
 
-	const { force, pretty } = req.query;
+	const { pretty } = req.query;
 
 	try {
-		const instance = await utils.getInstance(channel, null, force, pretty);
+		const instance = await utils.getInstance(channel, null, 'false', pretty);
 
 		if (instance.error) {
 			res.status(instance.status);
@@ -159,7 +159,7 @@ app.get('/rdr/:channel', async (req, res) => {
 app.get('/rdr/:channel/:user', async (req, res) => {
 	const channel = utils.formatUsername(req.params.channel);
 	const user = utils.formatUsername(req.params.user);
-	const { force, pretty } = req.query;
+	const { pretty } = req.query;
 
 	if (!utils.userChanRegex.test(channel)) {
 		res.status(400);
@@ -172,7 +172,7 @@ app.get('/rdr/:channel/:user', async (req, res) => {
 	}
 
 	try {
-		const instance = await utils.getInstance(channel, user, force, pretty);
+		const instance = await utils.getInstance(channel, user, 'false', pretty);
 
 		if (instance.error) {
 			res.status(instance.status);
@@ -193,7 +193,7 @@ app.get('/rdr/:channel/:user', async (req, res) => {
 });
 
 app.get('/api/:channel', async (req, res) => {
-	const { force, pretty, plain } = req.query;
+	const { pretty, plain } = req.query;
 	const channel = utils.formatUsername(req.params.channel);
 	let error = null;
 
@@ -206,7 +206,7 @@ app.get('/api/:channel', async (req, res) => {
 	const isPlain = plain?.toLowerCase() === 'true';
 
 	try {
-		const instances = await utils.getInstance(channel, null, force, pretty, error);
+		const instances = await utils.getInstance(channel, null, 'false', pretty, error);
 
 		if (isPlain) {
 			res.status(instances?.status || 400);
@@ -229,7 +229,7 @@ app.get('/api/:channel', async (req, res) => {
 });
 
 app.get('/api/:channel/:user', async (req, res) => {
-	const { force, pretty, plain } = req.query;
+	const { pretty, plain } = req.query;
 	const channel = utils.formatUsername(req.params.channel);
 	const user = utils.formatUsername(req.params.user);
 	const isPlain = plain?.toLowerCase() === 'true';
@@ -244,7 +244,7 @@ app.get('/api/:channel/:user', async (req, res) => {
 	if (!utils.userChanRegex.test(user)) error = `Invalid username or user ID: ${user}`;
 
 	try {
-		const instances = await utils.getInstance(channel, user, force, pretty, error);
+		const instances = await utils.getInstance(channel, user, 'false', pretty, error);
 
 		if (isPlain) {
 			res.status(instances?.status || 400);
@@ -296,7 +296,7 @@ app.get('/instances', async (req, res) => {
 
 app.get('/channels', async (req, res) => {
 	const instances = Object.fromEntries(utils.instanceChannels);
-	const channels = Array.from(utils.uniqueChannels);
+	const channels = Array.from(utils.uniqueChannels.values());
 	sendStats(req, 'channels');
 
 	res.json({
@@ -321,7 +321,6 @@ const extractValue = (input, regex) => {
 const logsApi = async (req, res) => {
 	const channel = extractValue(req.url, utils.channelLinkRegex);
 	const user = extractValue(req.url, utils.userLinkRegex);
-	const { force } = req.query;
 
 	sendStats(req, 'mirror', {
 		channel: channel ?? '',
@@ -335,7 +334,7 @@ const logsApi = async (req, res) => {
 	}
 
 	try {
-		const data = await utils.getInstance(channel, user, force);
+		const data = await utils.getInstance(channel, user, 'false');
 		if (data.error) {
 			res.status(data.status || 404);
 			res.contentType('text/plain');
@@ -352,12 +351,11 @@ const logsApi = async (req, res) => {
 				});
 			}
 
-			const { body, statusCode, headers } = await got(`${instanceLink}${requestUrl}`, {
+			const { body, statusCode, headers } = await utils.request(`${instanceLink}${requestUrl}`, {
 				headers: { 'User-Agent': 'Best Logs by ZonianMidian' },
 				throwHttpErrors: false,
-				https: {
-					rejectUnauthorized: false,
-				},
+				https: { rejectUnauthorized: false },
+				timeout: 120000,
 				http2: true,
 			});
 

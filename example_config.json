@@ -32,7 +32,7 @@
 			"maintainer": "HackMagic"
 		},
 		"logs.susgee.dev": {
-			"maintainer": "lucas19961"
+			"maintainer": "LUCAS19961"
 		},
 		"logs.jimmyboy.dev": {
 			"maintainer": "devJimmyboy"
@@ -50,7 +50,7 @@
 			"maintainer": "Mejkiz"
 		},
 		"logs.chaosly.de": {
-			"maintainer": "stimmungschaos__"
+			"maintainer": "STIMMUNGSCHAOS__"
 		},
 		"logs.ananasxpress.dev": {
 			"maintainer": "ananasxpress_"
@@ -59,10 +59,22 @@
 			"maintainer": "Faisal"
 		},
 		"logs.folhinhabot.com": {
-			"maintainer": "leafyzito"
+			"maintainer": "Leafyzito"
 		},
 		"logs.xyqra.com": {
 			"maintainer": "Xyqra"
+		},
+		"logxx.dev": {
+			"maintainer": "seryxx"
+		},
+		"logs.mrchuw.com.br": {
+			"maintainer": "Mr_Chuw"
+		},
+		"logs.tlosdev.com": {
+			"maintainer": "xTlos"
+		},
+		"logs.nemeow.online": {
+			"maintainer": "sudo_lovemebaby"
 		}
 	},
 	"recentmessagesInstances": {

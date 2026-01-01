@@ -34,7 +34,7 @@ export class Utils {
 	userIdRegex = /^id:(\d{1,})$/i;
 
 	instanceChannels = new Map();
-	uniqueChannels = new Set();
+	uniqueChannels = new Map();
 	statusCodes = new Map();
 	listData = new Map();
 	infoData = new Map();
@@ -142,9 +142,11 @@ export class Utils {
 			}),
 		);
 
-		this.lastUpdated = Date.now();
-		this.statusCodes.clear();
-		this.listData.clear();
+		if (!onlyError) {
+			this.lastUpdated = Date.now();
+			this.statusCodes.clear();
+			this.listData.clear();
+		}
 
 		if (!noLogs) {
 			console.log(
@@ -154,10 +156,7 @@ export class Utils {
 	}
 
 	addChannel(channel) {
-		const set = this.uniqueChannels;
-		if (![...set].some((item) => item.userID === channel.userID)) {
-			this.uniqueChannels.add(channel);
-		}
+		this.uniqueChannels.set(channel.userID, channel);
 	}
 
 	async loopLoadInstanceChannels(noLogs) {
@@ -352,11 +351,9 @@ export class Utils {
 		let list = this.listData.get(listCacheKey);
 
 		if (!list || force) {
-			list = await got(`https://${instanceURL}/list?${channelPath}=${channelClean}`, {
+			list = await this.request(`https://${instanceURL}/list?${channelPath}=${channelClean}`, {
 				headers: { 'User-Agent': 'Best Logs by ZonianMidian' },
-				https: {
-					rejectUnauthorized: false,
-				},
+				https: { rejectUnauthorized: false },
 				timeout: 5000,
 				http2: true,
 			})
@@ -367,12 +364,14 @@ export class Utils {
 					return availableLogsLength;
 				})
 				.catch((err) => {
-					console.error(`[${instanceURL}] Failed loading ${channelClean} length: ${err.message}`);
+					console.error(`[${instanceURL}] Failed loading ${channel} length: ${err.message}`);
 					return [];
 				});
 
 			this.listData.set(listCacheKey, list);
 		}
+
+		const channelFull = pretty ? `https://tv.supa.sh/logs?c=${channel}` : `https://${url}/?channel=${channel}`;
 
 		if (!user) {
 			console.log(`[${url}] Channel: ${channel} | ${list.length} days`);
@@ -380,7 +379,7 @@ export class Utils {
 			return {
 				Status: 2,
 				Link: `https://${url}`,
-				channelFull: pretty ? `https://logs.awoo.nl/${url}/${channelPath}/${channelClean}` : `https://${url}/?channel=${channel}`,
+				channelFull,
 				list,
 			};
 		}
@@ -404,11 +403,7 @@ export class Utils {
 			this.statusCodes.set(instanceCacheKey, statusCode);
 		}
 
-		const fullLink = pretty
-			? `https://logs.awoo.nl/${url}/${channelPath}/${channelClean}/${userPath}/${userClean}`
-			: `https://${url}/?channel=${channel}&username=${user}`;
-
-		const channelFull = pretty ? `https://logs.awoo.nl/${url}/${channelPath}/${channelClean}` : `https://${url}/?channel=${channel}`;
+		const fullLink = pretty ? `https://tv.supa.sh/logs?c=${channel}&u=${user}` : `https://${url}/?channel=${channel}&username=${user}`;
 
 		console.log(`[${url}] Channel: ${channel} - User: ${user} | ${statusCode} - ${list.length} days`);
 
