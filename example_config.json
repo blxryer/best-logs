@@ -78,6 +78,9 @@
 		}
 	},
 	"recentmessagesInstances": {
+		"rm.lilb.dev": {
+			"maintainer": "lilb_lxryer"
+		},
 		"recent-messages.zneix.eu": {
 			"maintainer": "zneix"
 		},

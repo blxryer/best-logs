@@ -479,9 +479,8 @@ export class Utils {
 		const start = performance.now();
 
 		const instances = Object.keys(this.config.recentmessagesInstances);
-		let { limit, rm_only } = searchParams;
-		limit = Number(limit) || 1000;
-		let recentMessages = [];
+		let { limit } = searchParams;
+		limit = Number(limit) || 5000;
 		let messages = [];
 
 		let statusMessage;
@@ -497,7 +496,6 @@ export class Utils {
 			status = statusCode || 500;
 
 			if (statusCode === 200 && body.messages.length) {
-				recentMessages = body.messages.filter((str) => !str.includes(':tmi.twitch.tv ROOMSTATE #'));
 				messages = body.messages.filter((str) => !str.includes(':tmi.twitch.tv ROOMSTATE #'));
 				errorCode = body.error_code;
 				error = body.error;
@@ -509,83 +507,6 @@ export class Utils {
 				error = body?.error || 'Internal Server Error';
 
 				console.error(`[${entry}] Channel: ${channel} | ${status} - ${error}`);
-			}
-		}
-
-		const firstTs = messages[0]?.match(this.tmiSentRegex)?.[1] || null;
-
-		if (!rm_only || rm_only !== 'true') {
-			const logs = await this.getInstance(channel);
-			let instanceLink = 'Logs';
-
-			try {
-				let instances = logs.channelLogs.instances;
-
-				const mainInstance = `https://${Object.keys(this.config.justlogsInstances)[0]}`;
-				const index = instances.indexOf(mainInstance);
-				if (index > 0) {
-					instances = [instances[index], ...instances.slice(0, index), ...instances.slice(index + 1)];
-				}
-
-				const maxRetries = 3;
-				let instanceIndex = 0;
-				let success = false;
-				let retries = 0;
-
-				while (retries < maxRetries && instanceIndex < instances.length && !success) {
-					instanceLink = instances[instanceIndex];
-					try {
-						if (logs.available.channel) {
-							const list = logs.loggedData.list;
-
-							let totalMessages = recentMessages.length;
-							let logsMessages = recentMessages;
-							let daysFetched = 0;
-							const maxDays = 7;
-
-							while (totalMessages < limit && daysFetched < maxDays && daysFetched < list.length) {
-								try {
-									const dayLogs = await this.fetchRustlogs(
-										instanceLink,
-										channel,
-										list[daysFetched],
-										limit - totalMessages,
-										firstTs,
-									);
-									logsMessages = [...dayLogs, ...logsMessages];
-									totalMessages += dayLogs.length;
-								} catch (dayError) {
-									if (daysFetched === 0) {
-										throw dayError;
-									}
-								}
-								daysFetched++;
-							}
-
-							console.log(`[${instanceLink.replace('https://', '')}] Channel: ${channel} | 200 - ${logsMessages.length} messages`);
-
-							if (logsMessages?.length >= messages.length) {
-								messages = logsMessages;
-								instance = instanceLink;
-								errorCode = null;
-								success = true;
-								status = 200;
-								error = null;
-							}
-						}
-					} catch (err) {
-						console.error(`[${instanceLink.replace('https://', '')}] Channel: ${channel} | Failed loading messages: ${err.message}`);
-						retries++;
-					} finally {
-						instanceIndex++;
-					}
-				}
-
-				if (!success) {
-					throw new Error(`Failed to fetch logs after ${retries + 1} retries`);
-				}
-			} catch (err) {
-				console.error(`- [RecentMessages] Channel: ${channel} | ${err.message}`);
 			}
 		}
 
